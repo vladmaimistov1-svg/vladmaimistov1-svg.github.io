@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Вишлист подарков</title>
+  <meta name="color-scheme" content="light only" />
+  <style>
+    :root{
+      --bg:#f8fafc;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --primary:#a78bfa;   /* светлая сирень */
+      --primary-2:#c4b5fd; /* чуть светлее */
+      --accent:#86efac;    /* зелёный акцент */
+      --warn:#facc15;      /* нейтральная плашка "забронировано" */
+      --shadow: 0 10px 20px rgba(17,24,39,.06), 0 2px 6px rgba(17,24,39,.06);
+      --radius:16px;
+      --radius-sm:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:linear-gradient(180deg,#f8fafc, #f5f3ff 35%, #f8fafc 100%);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    header{
+      position:sticky; top:0; z-index:5;
+      background:rgba(255,255,255,.72); backdrop-filter: blur(10px);
+      border-bottom:1px solid rgba(0,0,0,.04);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:22px 16px}
+    .title{font-size:clamp(22px,2.8vw,34px);font-weight:800;color:var(--text);letter-spacing:.2px}
+    .subtitle{color:var(--muted);margin-top:6px}
+    .bar{
+      display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:16px
+    }
+    .countdown{
+      display:inline-flex; align-items:center; gap:8px; padding:10px 14px;
+      background:linear-gradient(180deg, var(--primary-2), #e9d5ff);
+      color:#2b2145; border-radius:var(--radius-sm); box-shadow:var(--shadow);
+      font-variant-numeric: tabular-nums;
+    }
+    .countdown b{font-weight:800;letter-spacing:.5px}
+    .search{
+      flex:1; min-width:220px; display:flex; align-items:center; gap:8px;
+      background:var(--card); border-radius:var(--radius-sm); box-shadow:var(--shadow);
+      border:1px solid rgba(0,0,0,.05); padding:10px 12px;
+    }
+    .search input{
+      border:none; outline:none; background:transparent; width:100%;
+      font-size:15px; color:var(--text)
+    }
+    .search input::placeholder{color:#9aa1ad}
+    main{padding:26px 16px 60px}
+    .grid{
+      --min:280px;
+      display:grid; gap:18px;
+      grid-template-columns: repeat(auto-fit, minmax(var(--min),1fr));
+    }
+    article.card{
+      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+      border:1px solid rgba(0,0,0,.05); overflow:hidden; display:flex; flex-direction:column;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    article.card:focus-within, article.card:hover{transform:translateY(-2px); box-shadow: 0 14px 28px rgba(17,24,39,.10), 0 8px 12px rgba(17,24,39,.06)}
+    .thumb{
+      aspect-ratio: 16/9; width:100%; background:linear-gradient(135deg,#f5f3ff,#e0f2fe);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .thumb img{width:100%; height:100%; object-fit:cover; display:block}
+    .placeholder{
+      width:72px; height:72px; border-radius:18px;
+      background: conic-gradient(from 180deg at 50% 50%, #c7d2fe, #a7f3d0, #fbcfe8, #c7d2fe);
+      box-shadow: inset 0 0 0 6px rgba(255,255,255,.7);
+    }
+    .body{padding:16px 16px 8px}
+    .title-row{display:flex; align-items:start; justify-content:space-between; gap:10px}
+    .gift-title{font-weight:700; color:var(--text); font-size:18px; margin:0}
+    .price{color:#374151; font-weight:700}
+    .desc{color:var(--muted); margin:8px 0 0; min-height:36px}
+    .status{
+      margin-top:10px; display:inline-flex; gap:8px; align-items:center;
+      font-size:13px; color:#3f3f46; background:#fff7cc; border:1px dashed #f1c40f;
+      padding:6px 10px; border-radius:999px;
+    }
+    .status.ok{background:#e8fff0; border-color:#22c55e; color:#14532d}
+    .footer{
+      margin-top:auto; padding:12px 16px 16px; display:flex; flex-wrap:wrap; gap:10px;
+      align-items:center; justify-content:space-between
+    }
+    .actions{display:flex; gap:10px; flex-wrap:wrap}
+    .btn{
+      appearance:none; border:none; cursor:pointer;
+      padding:10px 14px; border-radius:999px; font-weight:700; letter-spacing:.2px;
+      transition: transform .08s ease, box-shadow .12s ease, background .2s ease, color .2s ease;
+      box-shadow:var(--shadow); outline-offset:2px;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn:focus-visible{outline:3px solid #a7f3d0}
+    .btn.primary{background:var(--primary); color:#2b2145}
+    .btn.primary:hover{background:#bca7ff}
+    .btn.link{background:#eef2ff}
+    .btn.link:hover{background:#e0e7ff}
+    .btn[disabled]{opacity:.55; cursor:not-allowed; transform:none}
+    .hint{font-size:12px; color:#6b7280}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    /* адаптив мелочи */
+    @media (max-width:420px){
+      .footer{flex-direction:column; align-items:stretch}
+      .actions{justify-content:space-between}
+      .btn{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" role="banner">
+      <h1 class="title">Идеи для подарков к моему Дню рождения</h1>
+      <p class="subtitle">Анонимная бронь без регистрации. Состояние видно всем в реальном времени.</p>
+      <div class="bar" aria-label="Панель управления">
+        <div class="countdown" id="countdown" aria-live="polite">
+          <span>До 13.11.2025 осталось</span> <b id="count-val">--:--:--:--</b>
+        </div>
+        <label class="search" aria-label="Поиск по названию">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 21l-4.3-4.3m1.6-4.3a7 7 0 11-14 0 7 7 0 0114 0z" opacity=".6"/></svg>
+          <input id="search" type="search" placeholder="Найти подарок…" autocomplete="off" />
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" role="main">
+    <section aria-labelledby="list-heading">
+      <h2 id="list-heading" class="sr-only">Список подарков</h2>
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Firebase + логика (модуль) -->
+  <script type="module">
+    /* ===========================
+       🔧 Firebase SDK (Web v9)
+       ===========================
+       1) Вставьте СВОЙ конфиг ниже.
+       2) Откройте index.html локально (двойной клик) — всё работает без сборщиков.
+       3) В консоли Firebase -> Firestore создайте коллекцию "gifts".
+    */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import {
+      getFirestore, collection, doc, onSnapshot, query, orderBy,
+      runTransaction, serverTimestamp, addDoc, getDocs
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    // ⚠️ Замените на свои значения из Firebase Console
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3JF9X-2eTHtErd8gm-haUdVURclERDRw",
+      authDomain: "hb25-ba1e4.firebaseapp.com",
+      projectId: "hb25-ba1e4",
+      storageBucket: "hb25-ba1e4.firebasestorage.app",
+      messagingSenderId: "628327577299",
+      appId: "1:628327577299:web:7d9b0ae4a761cde3040626",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    const giftsRef = collection(db, "gifts");
+
+    /* ===========================
+       🔒 Минимальные правила безопасности (набросок)
+       Вставьте в Firestore Rules (Console):
+       
+       rules_version = '2';
+       service cloud.firestore {
+         match /databases/{database}/documents {
+           match /gifts/{giftId} {
+             allow read: if true;
+             // Разрешаем обновлять ТОЛЬКО поля reserved, reservedAt, reservedByDevice
+             // и строго по сценариям "забронировать" и "снять свою бронь".
+             allow update: if
+               request.resource.data.diff(resource.data).changedKeys()
+                 .hasOnly(['reserved','reservedAt','reservedByDevice']) &&
+               (
+                 // поставить бронь, если её не было
+                 (!resource.data.reserved == true && request.resource.data.reserved == true)
+                 ||
+                 // снять бронь может только тот же deviceId
+                 (resource.data.reserved == true && request.resource.data.reserved == false &&
+                  resource.data.reservedByDevice == request.resource.data.reservedByDevice)
+               );
+             allow create, delete: if false;
+           }
+         }
+       }
+    =========================== */
+
+    /* ===========================
+       🆔 Анонимный псевдо-ID устройства
+    =========================== */
+    const DEVICE_KEY = "wishlist_device_id";
+    let deviceId = localStorage.getItem(DEVICE_KEY);
+    if (!deviceId) {
+      deviceId = (crypto?.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now());
+      localStorage.setItem(DEVICE_KEY, deviceId);
+    }
+
+    /* ===========================
+       ⏳ Обратный отсчёт до 2025-11-13 00:00 локального времени
+    =========================== */
+    const TARGET_ISO = "2025-11-13T00:00:00";
+    const target = new Date(TARGET_ISO);
+    const countEl = document.getElementById("count-val");
+    const cdWrap = document.getElementById("countdown");
+    let timerId;
+
+    function pad(n){ return String(n).padStart(2,"0"); }
+    function tick(){
+      const now = new Date();
+      const diff = target.getTime() - now.getTime();
+      if (diff <= 0){
+        clearInterval(timerId);
+        cdWrap.innerHTML = `<b>С днём рождения!</b>`;
+        return;
+      }
+      const days = Math.floor(diff / (1000*60*60*24));
+      const hrs  = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+      const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+      const secs = Math.floor((diff % (1000*60)) / 1000);
+      countEl.textContent = `${pad(days)}:${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+    }
+    timerId = setInterval(tick, 1000); tick();
+
+    /* ===========================
+       🔎 Поиск по названию
+    =========================== */
+    const searchInput = document.getElementById("search");
+    let searchTerm = "";
+    searchInput.addEventListener("input", (e)=> {
+      searchTerm = e.target.value.trim().toLowerCase();
+      render(allGifts); // быстрое клиентское фильтрование
+    });
+
+    /* ===========================
+       🧩 Рендер карточек
+    =========================== */
+    const grid = document.getElementById("grid");
+    let allGifts = [];
+
+    function createCard(gift) {
+  const { id, title, description, price, link, image, reserved, reservedByDevice } = gift;
+  const canReserve = gift.canReserve !== false; // если поля нет — бронь разрешена по умолчанию
+  const isMine = reserved && reservedByDevice === deviceId;
+
+  const card = document.createElement("article");
+  card.className = "card";
+  card.tabIndex = 0;
+  card.setAttribute("aria-label", title);
+
+  // 🔹 Фото / Плейсхолдер
+  const thumb = document.createElement("div");
+  thumb.className = "thumb";
+  if (image) {
+    const img = document.createElement("img");
+    img.src = image;
+    img.alt = title;
+    img.loading = "lazy";
+    thumb.appendChild(img);
+  } else {
+    const ph = document.createElement("div");
+    ph.className = "placeholder";
+    ph.setAttribute("aria-hidden", "true");
+    thumb.appendChild(ph);
+  }
+
+  // 🔹 Основной блок
+  const body = document.createElement("div");
+  body.className = "body";
+
+  const row = document.createElement("div");
+  row.className = "title-row";
+  const h3 = document.createElement("h3");
+  h3.className = "gift-title";
+  h3.textContent = title;
+  const priceEl = document.createElement("div");
+  priceEl.className = "price";
+  priceEl.textContent = price ? `${price.toLocaleString()} ₽` : "";
+  row.append(h3, priceEl);
+
+  const p = document.createElement("p");
+  p.className = "desc";
+  p.textContent = description || "—";
+
+  // 🔹 Статус отображаем только если можно бронировать
+if (canReserve) {
+  const status = document.createElement("div");
+  status.className = "status" + (reserved ? "" : " ok");
+  status.innerHTML = reserved ? "Забронировано" : "Свободно";
+  body.append(row, p, status);
+} else {
+  body.append(row, p); // без статуса
+}
+
+  // 🔹 Нижняя панель
+  const footer = document.createElement("div");
+  footer.className = "footer";
+
+  const actions = document.createElement("div");
+  actions.className = "actions";
+
+  // 🔗 Кнопка "Посмотреть"
+  // 🔗 Кнопка "Посмотреть" (если разрешено)
+const canView = gift.canView !== false; // по умолчанию true
+if (canView && link) {
+  const view = document.createElement("a");
+  view.className = "btn link";
+  view.href = link;
+  view.target = "_blank";
+  view.rel = "noopener noreferrer";
+  view.textContent = "Посмотреть";
+  view.setAttribute("aria-label", `Открыть ссылку на «${title}»`);
+  actions.append(view);
+}
+
+  // 🎁 Кнопка бронирования (только если canReserve = true)
+  if (canReserve) {
+    const book = document.createElement("button");
+    book.type = "button";
+    book.className = "btn primary";
+    book.setAttribute("data-id", id);
+
+    if (!reserved) {
+      book.textContent = "Забронировать";
+      book.disabled = false;
+    } else if (isMine) {
+      book.textContent = "Снять бронь";
+      book.disabled = false;
+    } else {
+      book.textContent = "Уже забронировано";
+      book.disabled = true;
+    }
+
+    book.addEventListener("click", () => toggleReservation(id, reserved, isMine));
+    actions.append(book);
+  }
+
+  // 🔸 Подсказка внизу
+  const hint = document.createElement("div");
+  hint.className = "hint";
+  hint.textContent = canReserve
+    ? "Бронь без имени, видна всем"
+    : "Без брони (информационная карточка)";
+
+  footer.append(actions, hint);
+  card.append(thumb, body, footer);
+
+  return card;
+}
+
+
+    function render(list){
+      // фильтрация по названию
+      const filtered = searchTerm
+        ? list.filter(g => g.title?.toLowerCase().includes(searchTerm))
+        : list;
+
+      grid.innerHTML = "";
+      if (filtered.length === 0){
+        const empty = document.createElement("p");
+        empty.style.color = "var(--muted)";
+        empty.textContent = "Ничего не найдено.";
+        grid.appendChild(empty);
+        return;
+      }
+      filtered.forEach(g => grid.appendChild(createCard(g)));
+    }
+
+    /* ===========================
+       🔄 Realtime — onSnapshot
+    =========================== */
+    onSnapshot(query(giftsRef, orderBy("title","asc")), (snap) => {
+      allGifts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      render(allGifts);
+    });
+
+    /* ===========================
+       🔁 Тоггл брони через транзакцию
+       — атомарно и честно при гонках
+    =========================== */
+    async function toggleReservation(docId, currentlyReserved, isMine){
+      const ref = doc(db, "gifts", docId);
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(ref);
+          if (!snap.exists()) throw new Error("Подарок не найден.");
+          const data = snap.data();
+
+          if (!data.reserved){
+            // ставим бронь
+            tx.update(ref, {
+              reserved: true,
+              reservedAt: serverTimestamp(),
+              reservedByDevice: deviceId
+            });
+          } else {
+            // уже занято
+            if (data.reservedByDevice === deviceId){
+              // снимаем свою бронь
+              tx.update(ref, {
+                reserved: false,
+                reservedAt: null,
+                reservedByDevice: null
+              });
+            } else {
+              throw new Error("Этот подарок уже забронирован другим участником.");
+            }
+          }
+        });
+      } catch (e){
+        alert(e.message || "Не удалось обновить бронь. Попробуйте ещё раз.");
+        console.error(e);
+      }
+    }
+
+    /* ===========================
+       🌱 Демо-наполнение (запускать один раз)
+       1) Снимите комментарии с вызова seedDemoGifts() ниже.
+       2) Обновите страницу — демо-записи добавятся, затем снова закомментируйте вызов.
+    =========================== */
+    async function seedDemoGifts(){
+      const demo = [
+        { title:"Бенто-торт", description:"Нежный крем, 2–3 надписи", price:1800, link:"https://example.com/cake", image:"", reserved:false, reservedAt:null, reservedByDevice:null },
+        { title:"Цветы в пастельных тонах", description:"Розовые/бежевые оттенки", price:3500, link:"https://example.com/flowers", image:"", reserved:false, reservedAt:null, reservedByDevice:null },
+        { title:"Воздушные шары", description:"Розовый, белый, серебро", price:1500, link:"https://example.com/balloons", image:"", reserved:false, reservedAt:null, reservedByDevice:null },
+        { title:"Коробочка со сладостями", description:"Карамельки, жевательные, чуть кислинки", price:1200, link:"https://example.com/candy", image:"", reserved:false, reservedAt:null, reservedByDevice:null },
+        { title:"Милый аксессуар", description:"Чехол/брелок в пастельной гамме", price:900, link:"https://example.com/accessory", image:"", reserved:false, reservedAt:null, reservedByDevice:null },
+        { title:"Аромасвеча", description:"Ваниль/хлопок/пудровые ноты", price:1400, link:"https://example.com/candle", image:"", reserved:false, reservedAt:null, reservedByDevice:null },
+        { title:"Плед-пастель", description:"Мягкий, уютный, 130×170", price:2600, link:"https://example.com/blanket", image:"", reserved:false, reservedAt:null, reservedByDevice:null },
+      ];
+      // пропускаем, если уже есть данные
+      const existing = await getDocs(giftsRef);
+      if (!existing.empty) { alert("Коллекция 'gifts' не пустая — сид пропущен."); return; }
+
+      for (const g of demo) { await addDoc(giftsRef, g); }
+      alert("Демо-подарки добавлены.");
+    }
+    // 👇 Запуск сидера ОДИН РАЗ при первичной инициализации:
+    // await seedDemoGifts();
+
+  </script>
+</body>
+</html>
